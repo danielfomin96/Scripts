@@ -1,0 +1,13 @@
+#!/bin/bash
+
+args="$@"
+match=" -ac [3-9] "
+replace=" -af pan=stereo|FL<0.707*FC+0.707*FL+0.707*BL+0.5*LFE|FR<0.707*FC+0.707*FR+0.707*BR+0.5*LFE "
+ffmpeg="/usr/lib/jellyfin-ffmpeg/ffmpeg"
+
+new_args=$(echo "$args" | sed "s/$match/$replace/g")
+
+#echo "Command Rewrite: $ffmpeg $new_args" 1>&2
+
+$($ffmpeg $new_args)
+exit $?
