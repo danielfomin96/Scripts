@@ -7,7 +7,7 @@ TEMP_HDD_MAX=49
 
 DOLOG=true
 LOGFILE="/tmp/fanCtrl.log"
-FILENAME="${BASH_SOURCE[0]}"
+FILENAME="$(basename ${BASH_SOURCE[0]})"
 SD_DEVIVES="sda sdb"
 LASTSPEED=-1
 _lock_file=/var/lock/subsys/"$FILENAME"
