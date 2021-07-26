@@ -2,15 +2,15 @@
 # Original author: galex from https://forum.qnap.com/viewtopic.php?t=58033
 
 REFTIME=17
-TEMP_SYS_OFF=43
 TEMP_HDD_LOW=37
 TEMP_HDD_MAX=49
 
 DOLOG=true
 LOGFILE="/tmp/fanCtrl.log"
+FILENAME="${BASH_SOURCE[0]}"
 SD_DEVIVES="sda sdb"
 LASTSPEED=-1
-_lock_file=/var/lock/subsys/fanCtrl.sh
+_lock_file=/var/lock/subsys/"$FILENAME"
 
 
 #------------------------------------------------#
@@ -18,21 +18,12 @@ _lock_file=/var/lock/subsys/fanCtrl.sh
 #------------------------------------------------#
 SetFanSpeed()
 {
-   CMD_NUM=0
-   if [ "$1" -eq 0 ]; then
-      CMD_NUM=48
+   CMD_NUM=$(($1*255/100))
 
-      if [ $LASTSPEED -ne $CMD_NUM ]; then
-         Log "OFF - $2"
-      fi
-   else
-      CMD_NUM=$(($1*255/100))
-
-      if [ $LASTSPEED -ne $CMD_NUM ]; then
-         Log "$CMD_NUM - $2"
-      fi
+   if [ $LASTSPEED -ne $CMD_NUM ]; then
+      Log "$CMD_NUM - $2"
    fi
-
+   
    LASTSPEED=$CMD_NUM
 
    hal_app --se_sys_set_fan_pwm enc_sys_id=root,pwm="$CMD_NUM"
@@ -42,7 +33,7 @@ SetFanSpeed()
 #   Log
 #------------------------------------------------#
 Log()
-{
+{                  
    if [ $DOLOG ]; then
       CURTIME=$(/bin/date '+%Y-%m-%d %H:%M:%S')
       echo "$CURTIME": "$1" >> $LOGFILE
@@ -57,15 +48,15 @@ start()
    /bin/rm -f ${_lock_file}
 
    if [ -f ${_lock_file} ]; then
-       /bin/echo "fanCtrl.sh is already run"
+       /bin/echo "$FILENAME is already run"
        exit 1
    fi
    /bin/touch ${_lock_file}
 
 
-   while true
+   while true 
    do
-      SYSTEMP=0
+      SYSTEMP=0 
       DEVTEMP=0
       DEVNUM=0
 
@@ -96,33 +87,15 @@ start()
          else
 
             if [ "$DEVTEMP" -gt $TEMP_HDD_MAX ]; then
-
+     
                SetFanSpeed 100 "hdd temp ($DEVTEMP)"
 
             else
-
+            
                FANSPEED=$((($DEVTEMP-$TEMP_HDD_LOW)*100/($TEMP_HDD_MAX-$TEMP_HDD_LOW)))
                SetFanSpeed $FANSPEED "hdd temp ($DEVTEMP)"
-
+    
             fi
-         fi
-
-      else
-
-         # Get system temperature and check fan speed
-         SYSTEMP=$(/sbin/getsysinfo systmp)
-         SYSTEMP=${SYSTEMP:0:2}
-         
-         if [ "$SYSTEMP" -le $TEMP_SYS_OFF ]; then
-
-            # Turn off
-            SetFanSpeed 0 "Sys temp ($SYSTEMP)"
-
-         else
-
-            # Set low speed
-            SetFanSpeed 1 "Sys temp ($SYSTEMP)"
-
          fi
 
       fi
@@ -137,7 +110,7 @@ start()
 #------------------------------------------------#
 stop()
 {
-    /bin/kill -TERM "$(pidof fanCtrl.sh dd)"
+    /bin/kill -TERM "$(pidof $FILENAME dd)"
     /bin/rm -f ${_lock_file}
 }
 
@@ -158,3 +131,7 @@ case "$1" in
 esac
 
 exit 0
+
+
+
+
